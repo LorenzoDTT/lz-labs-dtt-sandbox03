@@ -1,0 +1,57 @@
+name: "Infrastructure Destroy"
+on:
+  workflow_dispatch:
+  
+permissions:
+  id-token: write 
+  contents: read
+  issues: write                                                  # Borrar si tienen github enterprise
+
+jobs:
+  terraform_plan:
+    name: "Copy & Publish Files"
+    environment: "tst-industria-sorpresa"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: "Copy & Publish Files"
+        uses: ./.github/actions/1.copy_publish
+          
+  manual_validation:
+    name: "Manual Validation"
+    runs-on: ubuntu-latest
+    needs: terraform_plan
+    environment: ${{ inputs.environment_approval_name }}
+    steps:
+      - run: echo "Aprobación manual requerida antes de terraform Destroy"     
+      - uses: trstringer/manual-approval@v1 # Borrar si tienen github enterprise                 
+        with:
+          secret: ${{ secrets.GITHUB_TOKEN }}
+          approvers: antiavr99
+          minimum-approvals: 1
+          issue-title: "Comprobación manual requerida para el terraform Destroy"
+          issue-body: "Por favor, revise el plan de Terraform y apruebe para proceder con el Destroy."
+          exclude-workflow-initiator-as-approver: false
+          additional-approved-words: ''
+          additional-denied-words: ''
+
+  terraform_destroy:
+    name: "Terraform Destroy"
+    environment: "lz-labs-dtt"
+    runs-on: ubuntu-latest
+    needs: manual_validation
+    steps:
+      - uses: actions/checkout@v4    
+      - name: "Terraform Destroy"
+        uses: ./.github/actions/3.terraform_destroy
+        with:
+          environment_prefix:        'tst'
+          solution_name:             'acr'
+          autentication_role_name:   'OpenID_Github_LorenzoDTT'
+          aws_region:                '${{ vars.AWS_REGION }}'
+          backend_bck_name:          '${{ vars.BACKEND_BCK_NAME }}'
+          backend_tbl_name:          '${{ vars.BACKEND_TBL_NAME }}'
+          terraform_version:         '${{ vars.TERRAFORM_VERSION }}'
+          account_id:                '${{ secrets.ACC_ID }}'
+          management_account_id:     '${{ secrets.MANG_ACC_ID }}'
+          org_id:                    '${{ secrets.ORG_ID }}'

@@ -1,0 +1,89 @@
+name: Step Apply"
+description: "Ejecuta Terraform Apply."
+inputs:
+  environment_prefix:
+    description: "Prefijo del entorno (e.g., dev, staging, prod)"
+    required: true 
+  solution_name:
+    description: "Nombre de la solución"
+    required: true
+  autentication_role_name:
+    description: "Nombre del role que se usa para autenticarse y que tiene los permisos para desplegar"
+    required: true
+  aws_region:
+    description: "Región de AWS donde se ejecutarán los recursos y operaciones de Terraform."
+    required: true
+  backend_bck_name:
+    description: "Nombre del bucket S3 utilizado como backend remoto para almacenar el estado de Terraform."
+    required: true
+  backend_tbl_name:
+    description: "Nombre de la tabla de DynamoDB usada para gestionar el bloqueo del estado (state lock) de Terraform."
+    required: true
+  terraform_version:
+    description: "Versión de Terraform que se utilizará durante la ejecución del plan o apply."
+    required: true
+  account_id:
+    description: "ID de la cuenta donde se producirá el deployment"
+    required: true
+  management_account_id :
+    description: "ID de la cuenta de management"
+    required: true
+  org_id:
+    description: "ID de la organización"
+    required: true
+    
+runs:
+  using: composite
+  steps:
+    - name: Checkout
+      uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        
+    - name: Download artifact
+      uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+      with:
+        name: drop
+        path: drop/
+        
+    - name: Replace Tokens
+      uses: qetza/replacetokens-action@v1
+      with:
+        variables: '[${{ toJSON(vars) }},${{ toJSON(secrets) }}]'
+        sources: |
+          ${{ github.workspace }}/drop/*.tfvars.tpl => ${{ github.workspace }}/drop/*.tfvars
+        token-prefix: '#{'
+        token-suffix: '}#'
+
+    - name: "Configure AWS Credentials"
+      uses: aws-actions/configure-aws-credentials@v5.1.1
+      with:
+        aws-region: "${{ inputs.AWS_REGION }}"
+        role-to-assume: "arn:aws:iam::${{ inputs.account_id }}:role/${{ inputs.autentication_role_name}}"
+        role-session-name: "${{ github.actor }}-${{ github.run_id }}"
+
+    - name: Install Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ inputs.TERRAFORM_VERSION }}
+    
+    - name: Terraform Init
+      shell: bash
+      working-directory: ${{ github.workspace }}/drop/
+      run: |
+        set -euo pipefail
+        terraform init \
+        -reconfigure \
+        -backend-config="bucket=${{ inputs.BACKEND_BCK_NAME }}" \
+        -backend-config="key=main.${{ inputs.environment_prefix }}-${{ inputs.solution_name }}.tfstate"\
+        -backend-config="region=${{ inputs.BACKEND_REGION }}" \
+        -backend-config="dynamodb_table=${{ inputs.BACKEND_TBL_NAME }}" \
+        -backend-config="encrypt=true"  
+
+    - name: Terraform Destroy
+      shell: bash
+      working-directory: ${{ github.workspace }}/drop/
+      run: |
+        terraform destroy -auto-approve \
+          -var-file=${{ inputs.environment_prefix }}-${{ inputs.solution_name }}-terraform.tfvars\
+          -var="environment_prefix=${{ inputs.environment_prefix }}" \
+          -var="solution_name=${{ inputs.solution_name }}" \
+          -var="aws_region=${{ inputs.aws_region }}"

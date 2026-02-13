@@ -1,0 +1,137 @@
+name: Step Plan
+description: "Ejecuta Terraform Plan con los archivos descargados del artefacto."
+inputs:
+  environment_prefix:
+    description: "Prefijo del entorno (e.g., dev, staging, prod)"
+    required: true 
+  solution_name:
+    description: "Nombre de la solución"
+    required: true
+  autentication_role_name:
+    description: "Nombre del role que se usa para autenticarse y que tiene los permisos para desplegar"
+    required: true
+  aws_region:
+    description: "Región de AWS donde se ejecutarán los recursos y operaciones de Terraform."
+    required: true
+  backend_bck_name:
+    description: "Nombre del bucket S3 utilizado como backend remoto para almacenar el estado de Terraform."
+    required: true
+  backend_tbl_name:
+    description: "Nombre de la tabla de DynamoDB usada para gestionar el bloqueo del estado (state lock) de Terraform."
+    required: true
+  terraform_version:
+    description: "Versión de Terraform que se utilizará durante la ejecución del plan o apply."
+    required: true
+  account_id:
+    description: "ID de la cuenta donde se producirá el deployment"
+    required: true
+  management_account_id :
+    description: "ID de la cuenta de management"
+    required: true
+  org_id:
+    description: "ID de la organización"
+    required: true
+    
+runs:
+  using: composite
+  steps:
+    - name: Checkout
+      uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+
+    - name: Download artifact
+      uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+      with:
+        name: drop
+        path: drop/
+    - name: Replace Tokens
+      uses: qetza/replacetokens-action@v1
+      with:
+        variables: '[${{ toJSON(vars) }},${{ toJSON(secrets) }}]'
+        sources: |
+          ${{ github.workspace }}/drop/*.tfvars.tpl => ${{ github.workspace }}/drop/*.tfvars
+        token-prefix: '#{'
+        token-suffix: '}#'
+
+    - name: "Configure AWS Credentials"
+      uses: aws-actions/configure-aws-credentials@v5.1.1
+      with:
+        aws-region: ${{ inputs.aws_region }}
+        role-to-assume: "arn:aws:iam::${{ inputs.account_id }}:role/${{ inputs.autentication_role_name}}"
+        role-session-name: "${{ github.actor }}-${{ github.run_id }}"
+
+    - name: Setup Terraform Backend (AWS)
+      shell: bash
+      run: |
+        # Crear bucket S3 para Terraform backend si no existe
+        if ! aws s3api head-bucket --bucket "${{ inputs.BACKEND_BCK_NAME }}" 2>/dev/null; then
+        aws s3api create-bucket \
+          --bucket "${{ inputs.BACKEND_BCK_NAME }}" \
+          --region "${{ inputs.aws_region }}" \
+          --create-bucket-configuration LocationConstraint="${{ inputs.aws_region }}"
+        echo "Se ha creado el bucket '${{ inputs.BACKEND_BCK_NAME }}'."
+        else
+          echo "El bucket S3 '${{ inputs.BACKEND_BCK_NAME }}' ya existe."
+        fi
+
+        # Control de versioning: habilitar solo si no está Enabled
+        CURRENT_VERSIONING=$(aws s3api get-bucket-versioning --bucket "${{ inputs.BACKEND_BCK_NAME }}" --query 'Status' --output text 2>/dev/null || echo "Disabled")
+        if [[ "${CURRENT_VERSIONING:-Disabled}" != "Enabled" ]]; then
+          aws s3api put-bucket-versioning \
+            --bucket "${{ inputs.BACKEND_BCK_NAME }}" \
+            --versioning-configuration Status=Enabled
+          echo "Versioning habilitado."
+        else
+          echo "Versioning ya está habilitado."
+        fi
+
+        # Crear tabla DynamoDB para locking si no existe
+        if ! aws dynamodb describe-table --table-name "${{ inputs.BACKEND_TBL_NAME }}" >/dev/null 2>&1; then
+          echo "No existe. Creando tabla DynamoDB"
+          aws dynamodb create-table \
+            --table-name "${{ inputs.BACKEND_TBL_NAME }}" \
+            --attribute-definitions AttributeName=LockID,AttributeType=S \
+            --key-schema AttributeName=LockID,KeyType=HASH \
+            --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5
+          echo "Se ha creado la tabla DynamoDB '${{ inputs.BACKEND_TBL_NAME }}'."
+        else
+          echo "La tabla DynamoDB '${{ inputs.BACKEND_TBL_NAME }}' ya existe."
+        fi
+
+    - name: Install Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ inputs.TERRAFORM_VERSION }}
+
+    - name: Create Terraform plugins directory
+      shell: bash
+      run: |
+        mkdir -p ~/.terraform.d/plugins/
+    
+    # Terraform init con backend AWS S3 (IAM)
+    - name: Terraform Init
+      shell: bash
+      working-directory: ${{ github.workspace }}/drop/
+      run: |
+        set -euo pipefail
+        terraform init \
+        -reconfigure \
+        -backend-config="bucket=${{ inputs.BACKEND_BCK_NAME }}" \
+        -backend-config="key=main.${{ inputs.environment_prefix }}-${{ inputs.solution_name }}.tfstate"\
+        -backend-config="region=${{ inputs.aws_region }}" \
+        -backend-config="dynamodb_table=${{ inputs.BACKEND_TBL_NAME }}" \
+        -backend-config="encrypt=true"  
+        
+    - name: Terraform Validate
+      shell: bash
+      run: terraform validate
+
+    - name: Terraform Plan
+      shell: bash
+      working-directory: ${{ github.workspace }}/drop/
+      run: |
+        terraform plan \
+          -out main.tfplan \
+          -var-file=${{ inputs.environment_prefix }}-${{ inputs.solution_name }}-terraform.tfvars\
+          -var="environment_prefix=${{ inputs.environment_prefix }}" \
+          -var="solution_name=${{ inputs.solution_name }}"\
+          -var="aws_region=${{ inputs.aws_region }}"

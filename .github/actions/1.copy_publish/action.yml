@@ -1,0 +1,23 @@
+name: Step Prepare
+description: "Copia los archibos Terraform al directorio de trabajo y los publica como artefacto para su uso en los siguientes pasos del pipeline."
+
+runs:
+  using: composite
+  steps:
+      - name: Copy Terraform Files to Drop Directory
+        shell: bash
+        run: |
+          mkdir -p drop
+          rsync -av \
+           --include='*/' \
+           --include='*.tf' \
+           --include='*.json' \
+           --include='*.tfvars.tpl' \
+           --exclude='*' \
+           terraform/ drop/
+           
+      - name: Publish Artifact
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
+        with:
+          name: drop
+          path: drop/
