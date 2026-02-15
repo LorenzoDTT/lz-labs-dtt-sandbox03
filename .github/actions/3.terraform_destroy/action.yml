@@ -57,7 +57,7 @@ runs:
       uses: aws-actions/configure-aws-credentials@v5.1.1
       with:
         aws-region: "${{ inputs.AWS_REGION }}"
-        role-to-assume: "arn:aws:iam::${{ inputs.account_id }}:role/${{ inputs.autentication_role_name}}"
+        role-to-assume: arn:aws:iam::068287245820:role/OpenID_Github_LorenzoDTT
         role-session-name: "${{ github.actor }}-${{ github.run_id }}"
 
     - name: Install Terraform
