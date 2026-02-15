@@ -41,7 +41,7 @@ jobs:
       - uses: trstringer/manual-approval@v1 # Borrar si tienen github enterprise                 
         with:
           secret: ${{ secrets.GITHUB_TOKEN }}
-          approvers: antiavr99
+          approvers: LorenzoDTT
           minimum-approvals: 1
           issue-title: "Comprobación manual requerida para el terraform Apply"
           issue-body: "Por favor, revise el plan de Terraform y apruebe para proceder con el Apply."
