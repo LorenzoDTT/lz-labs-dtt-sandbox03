@@ -1,10 +1,14 @@
 variable "aws_region" {
-  type = string
+  description = "AWS region where resources will be deployed"
+  type        = string
 }
 
 variable "environment_prefix" {
-  type = string
+  description = "Environment prefix (e.g., dev, staging, prod)"
+  type        = string
 }
+
 variable "solution_name" {
-  type = string
+  description = "Solution name"
+  type        = string
 }
