@@ -126,6 +126,19 @@ runs:
       shell: bash
       run: terraform validate
 
+    - name: Debug Terraform context
+      run: |
+      echo "PWD=$(pwd)"
+      echo "---- TF files here ----"
+      ls -la *.tf || true
+      echo "---- variables.tf content ----"
+      test -f variables.tf && sed -n '1,120p' variables.tf || echo "NO variables.tf in this directory"
+      echo "---- tfvars file ----"
+      TFVARS="${{ inputs.environment_prefix }}-${{ inputs.solution_name }}-terraform.tfvars"
+      echo "Expecting tfvars: $TFVARS"
+      ls -la "$TFVARS" || true
+      test -f "$TFVARS" && cat "$TFVARS" || true
+
     - name: Terraform Plan
       shell: bash
       working-directory: ${{ github.workspace }}/drop/
