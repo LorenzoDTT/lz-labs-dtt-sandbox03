@@ -52,12 +52,13 @@ runs:
           ${{ github.workspace }}/drop/*.tfvars.tpl => ${{ github.workspace }}/drop/*.tfvars
         token-prefix: '#{'
         token-suffix: '}#'
+        variables: '[{ "MANG_ACC_ID" : "${{ inputs.management_account_id }}", "ORG_ID" : "${{ inputs.org_id }}" }]'
 
     - name: "Configure AWS Credentials"
       uses: aws-actions/configure-aws-credentials@v5.1.1
       with:
         aws-region: "${{ inputs.AWS_REGION }}"
-        role-to-assume: arn:aws:iam::068287245820:role/OpenID_Github_LorenzoDTT
+        role-to-assume: "arn:aws:iam::${{ inputs.account_id }}:role/${{ inputs.autentication_role_name}}"
         role-session-name: "${{ github.actor }}-${{ github.run_id }}"
 
     - name: Install Terraform
