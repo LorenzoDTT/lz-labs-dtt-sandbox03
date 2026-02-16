@@ -125,6 +125,13 @@ runs:
       shell: bash
       run: terraform validate
 
+    - name: Show tfvars file exists
+      shell: bash
+      run: |
+      ls -la
+      echo "tfvars: ${{ inputs.environment_prefix }}-${{ inputs.solution_name }}-terraform.tfvars"
+      test -f "${{ inputs.environment_prefix }}-${{ inputs.solution_name }}-terraform.tfvars" && echo "OK" || (echo "MISSING" && exit 1)
+
     - name: Terraform Plan
       shell: bash
       working-directory: ${{ github.workspace }}/drop/
