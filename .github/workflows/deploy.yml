@@ -20,8 +20,8 @@ jobs:
       - name: "Terraform Plan"
         uses: ./.github/actions/2.terraform_plan
         with:
-          environment_prefix:        'tst'
-          solution_name:             'acr'
+          environment_prefix:        'test'
+          solution_name:             'acx'
           autentication_role_name:   'OpenID_Github_LorenzoDTT'
           aws_region:                '${{ vars.AWS_REGION }}'
           backend_bck_name:          '${{ vars.BACKEND_BCK_NAME }}'
@@ -59,8 +59,8 @@ jobs:
       - name: "Terraform Apply"
         uses: ./.github/actions/3.terraform_apply
         with:
-          environment_prefix:        'tst'
-          solution_name:             'acr'
+          environment_prefix:        'test'
+          solution_name:             'acx'
           autentication_role_name:   'OpenID_Github_LorenzoDTT'
           aws_region:                '${{ vars.AWS_REGION }}'
           backend_bck_name:          '${{ vars.BACKEND_BCK_NAME }}'

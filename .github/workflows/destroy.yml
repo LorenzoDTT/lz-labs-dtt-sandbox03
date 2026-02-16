@@ -10,7 +10,7 @@ permissions:
 jobs:
   terraform_plan:
     name: "Copy & Publish Files"
-    environment: "tst-industria-sorpresa"
+    environment: "lz-labs-dtt"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -45,8 +45,8 @@ jobs:
       - name: "Terraform Destroy"
         uses: ./.github/actions/3.terraform_destroy
         with:
-          environment_prefix:        'tst'
-          solution_name:             'acr'
+          environment_prefix:        'test'
+          solution_name:             'acx'
           autentication_role_name:   'OpenID_Github_LorenzoDTT'
           aws_region:                '${{ vars.AWS_REGION }}'
           backend_bck_name:          '${{ vars.BACKEND_BCK_NAME }}'
