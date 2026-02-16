@@ -10,6 +10,7 @@ runs:
           mkdir -p drop
           rsync -av \
            --include='*/' \
+           --include='*' \
            --include='*.tf' \
            --include='*.json' \
            --include='*.tfvars.tpl' \
