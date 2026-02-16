@@ -55,7 +55,6 @@ runs:
           ${{ github.workspace }}/drop/*.tfvars.tpl => ${{ github.workspace }}/drop/*.tfvars
         token-prefix: '#{'
         token-suffix: '}#'
-        variables: '[{ "MANG_ACC_ID" : "${{ inputs.management_account_id }}", "ORG_ID" : "${{ inputs.org_id }}" }]'
 
     - name: "Configure AWS Credentials"
       uses: aws-actions/configure-aws-credentials@v5.1.1
