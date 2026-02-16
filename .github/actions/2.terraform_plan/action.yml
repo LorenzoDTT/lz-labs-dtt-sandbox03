@@ -46,7 +46,6 @@ runs:
     - name: Replace Tokens
       uses: qetza/replacetokens-action@v1
       with:
-        variables: '[${{ toJSON(vars) }},${{ toJSON(secrets) }}]'
         sources: |
           ${{ github.workspace }}/drop/*.tfvars.tpl => ${{ github.workspace }}/drop/*.tfvars
         token-prefix: '#{'
