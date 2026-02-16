@@ -123,6 +123,7 @@ runs:
         
     - name: Terraform Validate
       shell: bash
+      working-directory: ${{ github.workspace }}/drop/
       run: terraform validate
 
     - name: Terraform Plan
