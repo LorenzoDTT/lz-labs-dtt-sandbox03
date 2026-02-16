@@ -14,7 +14,7 @@ variable "solution_name" {
 }
 
 variable "azs" {
-  type = map(string)
+  type = list(string)
 }
 
 variable "name_prefix" {
