@@ -30,13 +30,13 @@ resource "aws_networkmanager_core_network" "core_network" {
   }
 }
 
-# ---------- RESOURCES IN IRELAND ----------
+# ---------- RESOURCES IN SPAIN ----------
 # Spoke VPCs - definition in variables.tf
-module "ireland_spoke_vpcs" {
-  for_each  = var.ireland_spoke_vpcs
+module "spain_spoke_vpcs" {
+  for_each  = var.spain_spoke_vpcs
   source    = "aws-ia/vpc/aws"
   version   = "= 4.5.0"
-  providers = { aws = aws.awsireland }
+  providers = { aws = aws.awsspain }
 
   name       = each.key
   cidr_block = each.value.cidr_block
@@ -68,16 +68,16 @@ module "ireland_spoke_vpcs" {
 }
 
 # EC2 Instances (in Spoke VPCs) and EC2 Instance Connect endpoint
-module "ireland_compute" {
-  for_each  = module.ireland_spoke_vpcs
-  source    = "../../tf_modules/compute"
-  providers = { aws = aws.awsireland }
+# module "spain_compute" {
+#   for_each  = module.spain_spoke_vpcs
+#   source    = "../../tf_modules/compute"
+#   providers = { aws = aws.awsspain }
 
-  identifier      = var.identifier
-  vpc_name        = each.key
-  vpc             = each.value
-  vpc_information = var.ireland_spoke_vpcs[each.key]
-}
+#   identifier      = var.identifier
+#   vpc_name        = each.key
+#   vpc             = each.value
+#   vpc_information = var.spain_spoke_vpcs[each.key]
+# }
 
 # ---------- RESOURCES IN N. VIRGINIA ----------
 # Spoke VPCs - definition in variables.tf
@@ -117,13 +117,13 @@ module "nvirginia_spoke_vpcs" {
 }
 
 # EC2 Instances (in Spoke VPCs) and EC2 Instance Connect endpoint
-module "nvirginia_compute" {
-  for_each  = module.nvirginia_spoke_vpcs
-  source    = "../../tf_modules/compute"
-  providers = { aws = aws.awsnvirginia }
+# module "nvirginia_compute" {
+#   for_each  = module.nvirginia_spoke_vpcs
+#   source    = "../../tf_modules/compute"
+#   providers = { aws = aws.awsnvirginia }
 
-  identifier      = var.identifier
-  vpc_name        = each.key
-  vpc             = each.value
-  vpc_information = var.nvirginia_spoke_vpcs[each.key]
-}
+#   identifier      = var.identifier
+#   vpc_name        = each.key
+#   vpc             = each.value
+#   vpc_information = var.nvirginia_spoke_vpcs[each.key]
+# }

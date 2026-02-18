@@ -14,7 +14,12 @@ terraform {
 }
 
 provider "aws" {
-  region = var.aws_regions.ireland
+  region = var.aws_regions.spain
+}
+
+provider "aws" {
+  region = var.aws_regions.spain
+  alias  = "awsspain"
 }
 
 # Provider definitios for Ireland Region

@@ -15,19 +15,20 @@ variable "aws_regions" {
   type        = map(string)
   description = "AWS Regions to create the environment."
   default = {
+    spain     = "eu-south-2"
     ireland   = "eu-west-1"
     nvirginia = "us-east-1"
   }
 }
 
-# Definition of the VPCs to create in Ireland Region
-variable "ireland_spoke_vpcs" {
+# Definition of the VPCs to create in Spain Region
+variable "spain_spoke_vpcs" {
   type        = any
-  description = "Information about the VPCs to create in eu-west-1."
+  description = "Information about the VPCs to create in eu-south-2."
 
   default = {
     "prod" = {
-      name                    = "prod-eu-west-1"
+      name                    = "prod-eu-south-2"
       segment                 = "production"
       number_azs              = 2
       cidr_block              = "10.0.0.0/24"
@@ -37,7 +38,7 @@ variable "ireland_spoke_vpcs" {
       instance_type           = "t2.micro"
     }
     "dev" = {
-      name                    = "dev-eu-west-1"
+      name                    = "dev-eu-south-2"
       segment                 = "development"
       number_azs              = 2
       cidr_block              = "10.0.1.0/24"
@@ -47,7 +48,7 @@ variable "ireland_spoke_vpcs" {
       instance_type           = "t2.micro"
     }
     "shared" = {
-      name                    = "shared-eu-west-1"
+      name                    = "shared-eu-south-2"
       segment                 = "sharedservice"
       number_azs              = 2
       cidr_block              = "10.0.2.0/24"
